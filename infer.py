@@ -4,7 +4,7 @@ import argparse
 import os
 
 import torch
-from diffusers import StableDiffusionPipeline
+from diffusers import DiffusionPipeline
 
 parser = argparse.ArgumentParser(description="Inference")
 parser.add_argument(
@@ -40,7 +40,7 @@ if __name__ == "__main__":
         "a photo of sks person in front of eiffel tower",
     ]
     # create & load model
-    pipe = StableDiffusionPipeline.from_pretrained(
+    pipe = DiffusionPipeline.from_pretrained(
         args.model_path,
         torch_dtype=torch.float16,
         safety_checker=None,
