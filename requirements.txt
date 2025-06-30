@@ -8,8 +8,8 @@ ftfy
 tensorboard
 Jinja2
 tqdm
-torch==1.13.1
-torchvision==0.14.1
+torch==2.0.0
+torchvision==0.15.1
 numpy==1.26.1
 kornia
 opencv-python

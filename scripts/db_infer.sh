@@ -8,7 +8,7 @@ ID_LIST=("n000061" "n000089" "n000090" "n000154" "n000161")
 
 for ID in "${ID_LIST[@]}"; do
   # ------------------------- Train DreamBooth on perturbed examples -------------------------
-  export MODEL_PATH="stabilityai/stable-diffusion-2-1-base"
+  export MODEL_PATH="kaggle/working/stable-diffusion-2-1-base"
   export CLASS_DIR="data/class-person-2-1"  
   export INSTANCE_DIR="./protected_images/$TASK_NAME/$ID"
   export DREAMBOOTH_OUTPUT_DIR="weights/dreambooth/DREAMBOOTH_$ID"
