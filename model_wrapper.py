@@ -6,7 +6,7 @@ from PIL import Image
 
 class GAPDiffWrapper:
     def __init__(self,
-                 generator_path="weights/model/G_per16_pretrain.pth",
+                 generator_path="G_per16_pretrain.pth",
                  resolution=512,
                  noise_budget="16.0"):
         self.generator_path = generator_path
