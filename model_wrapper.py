@@ -1,40 +1,51 @@
 # model_wrapper.py
-import torch
-import numpy as np
+import os
+import uuid
+import subprocess
 from PIL import Image
-from torchvision import transforms
-from models.Generator_Prelayer import Generator_Prelayer
-from types import SimpleNamespace
 
-# Load model once (shared across calls)
-class GAPDiffModel:
-    def __init__(self, weight_path: str, resolution: int = 512, noise_budget: str = "16.0"):
-        args = SimpleNamespace(
-            generator_path=weight_path,
-            resolution=resolution,
-            noise_budget=noise_budget,
-            training=False  # matches argparse default
-        )
-        self.device = torch.device("cpu")
-        self.model = Generator_Prelayer(args).to(self.device)
-        self.model.load_state_dict(torch.load(weight_path, map_location=self.device))
-        self.model.eval()
-
-        self.transform = transforms.Compose([
-            transforms.Resize((resolution, resolution)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.5]*3, [0.5]*3)
-        ])
+class GAPDiffWrapper:
+    def __init__(self,
+                 generator_path="weights/model/G_per16_pretrain.pth",
+                 resolution=512,
+                 noise_budget="16.0"):
+        self.generator_path = generator_path
+        self.resolution = resolution
+        self.noise_budget = noise_budget
 
     def run(self, img: Image.Image) -> Image.Image:
-        img_tensor = self.transform(img.convert("RGB")).unsqueeze(0).to(self.device)
+        # Generate unique ID to avoid filename collisions
+        session_id = str(uuid.uuid4())[:8]
+        temp_dir = f"temp/{session_id}"
+        input_path = os.path.join(temp_dir, "input.png")
+        output_path = os.path.join(temp_dir, "output", "input.png")
 
-        with torch.no_grad():
-            output_tensor = self.model(img_tensor).squeeze(0).cpu()
+        # Create necessary directories
+        os.makedirs(os.path.join(temp_dir, "output"), exist_ok=True)
 
-        # Denormalize
-        output_array = output_tensor.permute(1, 2, 0).numpy()
-        output_array = (output_array * 0.5 + 0.5) * 255
-        output_array = np.clip(output_array, 0, 255).astype(np.uint8)
+        # Save input image
+        img.save(input_path)
 
-        return Image.fromarray(output_array)
+        # Run generate.py using subprocess
+        try:
+            subprocess.run([
+                "python", "generate.py",
+                f"--generator_path={self.generator_path}",
+                f"--source_path={temp_dir}",
+                f"--save_path={os.path.join(temp_dir, 'output')}",
+                f"--resolution={self.resolution}",
+                f"--noise_budget={self.noise_budget}"
+            ], check=True)
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"generate.py failed: {e}")
+
+        if not os.path.exists(output_path):
+            raise FileNotFoundError(f"Output image not found: {output_path}")
+
+        # Load result
+        result_img = Image.open(output_path).convert("RGB")
+
+        # (Optional) Cleanup
+        # import shutil; shutil.rmtree(temp_dir)
+
+        return result_img
